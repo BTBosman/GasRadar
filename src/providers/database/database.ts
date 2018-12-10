@@ -4,8 +4,11 @@ import * as moment from 'moment'
 import { Geolocation } from "@ionic-native/geolocation";
 // import *as firebase from 'firebase';
 import { LoadingController } from 'ionic-angular';
+import { HttpClient } from '@angular/common/http';
+
 
 declare var firebase;
+declare var google;
 /*
   Generated class for the DatabaseProvider provider.
 
@@ -33,17 +36,40 @@ export class DatabaseProvider {
   defaultImages = ['../../assets/imgs/pic.jpg', '../../assets/imgs/pic23.jpg', '../../assets/imgs/pic24.jpg', '../../assets/imgs/pic22.jpg', '../../assets/imgs/pic25.jpg']
   user: firebase.User;
   url: string;
+  longi;
+  lati;
+  address;
+  
 
-  constructor(public geolocation: Geolocation, private loadingCtrl: LoadingController) {
+  constructor(public http: HttpClient, public geolocation: Geolocation, private loadingCtrl: LoadingController) {
     console.log('Hello DatabaseProvider Provider');
     // this.checkUserState();
+  }
+
+  apiKey(){
+    let key = "http://www.apilayer.net/api/live?access_key=0d2ab54aa940e5b82dc37bb63cb3db36&currencies=USD,GBP,AUD,ZAR&format=1";
+    return new Promise((accpt,rej)=>{
+      this.http.get(key).subscribe(data=>{
+        console.log(data)
+      })
+    })
+  }
+
+  apiKey2(){
+   let ApiKey2 = "https://api.fuelsa.co.za/exapi/fuel/currentkey=ngP2le200gg1yghWBVytHGH8Qm4IAoc3";
+   return new Promise((accpt,rej)=>{
+     this.http.get(ApiKey2).subscribe(data=>{
+      console.log(data)
+     })
+     
+   })
   }
 
   registerUser(Username, email, password) {
     return new Promise((accpt, rej) => {
       this.authenticate.createUserWithEmailAndPassword(email, password).then(() => {
         var user = firebase.auth().currentUser;
-        this.dbRef = 'users/' + user.uid;
+        this.dbRef = `userdb/${Username}`;
         this.database.ref(this.dbRef).push({
           Username: Username,
           img: this.defaultImages[Math.floor(Math.random() * 4)],
@@ -55,6 +81,79 @@ export class DatabaseProvider {
       })
     })
   }
+  registerBusiness2(email,password,companyName,tel,lati,longi,petrol93,petrol95,gas,diesel,icon){
+    return new Promise((accpt,rej)=>{
+      firebase.auth().onAuthStateChanged(data=>{
+        if(data){
+        var user = firebase.auth().currentUser;
+        if(this.currentUserID == user.uid)
+        this.dbRef = 'userdb/' + user.uid;
+        this.database.ref(this.dbRef + user.uid).update({
+        name: companyName,
+         tel: tel,
+         petrol93: petrol93,
+         petrol95: petrol95,
+         gas: gas,
+         diesel: diesel,
+         icon: icon,
+         lat: this.lati,
+         lng: this.longi,
+         email: email,
+      })
+      accpt("data saved")
+      }
+    })
+  })
+}
+
+  // registerBusiness(email,password,companyName,tel,lati,longi,petrol93,petrol95,gas,diesel,icon) {
+  //   return new Promise((accpt,rej)=>{
+  //     this.address = { lat:this.lati,lng:this.longi }
+  //     this.authenticate.createUserWithEmailAndPassword(email,password).then(()=>{
+  //       var user = firebase.auth().currentUser;
+  //       this.dbRef = 'userdb/' + this.currentUserID;
+  //       this.database.ref(this.dbRef).push({
+  //        name: companyName,
+  //        tel: tel,
+  //        petrol93: petrol93,
+  //        petrol95: petrol95,
+  //        gas: gas,
+  //        diesel: diesel,
+  //        icon: icon,
+  //        lat: this.lati,
+  //        lng: this.longi,
+  //        email: email,
+  //       })
+  //       accpt("user registered")
+  //         ,Error =>{
+  //       rej(Error.message)
+  //     })
+  //   })
+  //  }
+  
+  GeoBussinessAddress(email,password,companyName,Address,tel,petrol93,petrol95,gas,diesel,icon){
+    return new Promise((accpt,rej)=>{
+      let geocoder = new google.maps.Geocoder();
+  
+      geocoder.geocode({'address':Address},(results, status)=>{
+        if(status == google.maps.GeocoderStatus.OK){
+           this.lati = results[0].geometry.location.lat();
+         this.longi = results[0].geometry.location.lng();
+         console.log(this.lati +" "+ this.longi);
+
+         let add = {
+           lat: this.lati, lng:this.longi
+         }
+
+         this.registerBusiness2(email,password,companyName,tel,this.lati,this.longi,petrol93,petrol95,gas,diesel,icon)
+      }
+      
+      })
+    })
+}
+
+    
+  
 
   insertImage(event: any, url) {
     if (event.target.files && event.target.files[0]) {
@@ -97,14 +196,6 @@ export class DatabaseProvider {
     }
   }
 
-
-  registerBusiness(details) {
-    firebase.storage().ref()
-    this.user = firebase.auth().currentUser;
-    if (this.user != undefined) {
-      return firebase.database().ref(`usersdb/${this.user}`).push(details);
-    }
-  }
 
   getuser() {
     return new Promise((accpt, rej) => {
@@ -393,7 +484,7 @@ export class DatabaseProvider {
   retrieve() {
 
     return new Promise((accpt, rej) => {
-
+      this.arrInfor.length = 0;
       firebase.database().ref("userdb/").on("value", data => {
         let infor = data.val();
         let arry = [];
@@ -414,30 +505,20 @@ export class DatabaseProvider {
             petrol95: infor[k].petrol95,
             diesel: infor[k].diesel
           };
-        
           this.arrInfor.push(obj);
           console.log(this.arrInfor);
         }
-
         accpt(this.arrInfor);
-
-
       })
-
-
-
     })
-
   }
+
   getCurrentLocations() {
     //get current location
     return new Promise((accpt, rej) => {
       this.geolocation.getCurrentPosition().then((resp) => {
         //  console.log(resp);
-
-
         accpt(resp);
-
       }).catch((error) => {
         //   console.log('Error getting location', error);
       });
@@ -457,13 +538,13 @@ export class DatabaseProvider {
       });
     })
   }
+
   getNearByOrganizations(radius, org) {
 
     return new Promise((accpt, rej) => {
 
       this.getCurrentLocations().then((resp: any) => {
         //  console.log(resp);
-
         var lat = new String(resp.coords.latitude).substr(0, 6);
         //   console.log(lat);
         //   console.log(resp.coords.latitude)
@@ -482,12 +563,9 @@ export class DatabaseProvider {
           // console.log(radius.down);
           // console.log(radius.up);
 
-
           if ((orgLong <= long && orgLong >= radius.left || orgLong >= long && orgLong <= radius.right) && (orglat >= lat && orglat <= radius.down || orglat <= lat && orglat >= radius.up)) {
-
             this.nearByOrg.push(org[x]);
             //   console.log(this.nearByOrg);
-
           }
         }
         accpt(this.nearByOrg)
@@ -500,6 +578,7 @@ export class DatabaseProvider {
   //     console.log(data);
   //   })
   // }
+
   getSearchbyFarms(lat, lng) {
     return new Promise((accpt, rej) => {
       this.createPositionRadius(lat, lng).then((data: any) => {
@@ -507,11 +586,8 @@ export class DatabaseProvider {
       })
     }).catch((error) => {
       //   console.log('Error getting location', error);
-
     })
   }
-
-
 
   getSearchedFarm(lat, lng, radius, org) {
     return new Promise((accpt, rej) => {
@@ -527,24 +603,14 @@ export class DatabaseProvider {
         for (let x = 0; x < org.length; x++) {
           var orglat = new String(org[x].lat).substr(0, 6);
           var orgLong = new String(org[x].lng).substr(0, 5);
-
           //   console.log(orgLong);
           //   console.log(orglat );
-
-
-
-
-
-
-
           //console.log('out');
           if ((orgLong <= long && orgLong >= radius.left || orgLong >= long && orgLong <= radius.right) && (orglat >= lt && orglat <= radius.down || orglat <= lt && orglat >= radius.up)) {
             //console.log('in');
             this.newSeachedFarms.push(org[x]);
             //  console.log(this.nearByOrg);
-
           }
-
         }
         accpt(this.newSeachedFarms)
       })

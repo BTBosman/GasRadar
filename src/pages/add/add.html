@@ -9,7 +9,7 @@
   <div class="contents">
     <div class="imagecontainer">
       <img [src]="url" alt="" class="image">
-      <input type="file" (change)="insertImage($event)" class="imagefile">
+      <input type="file" (change)="insertpic($event)" class="imagefile">
       <ion-fab class="fabtn">
         <button color="secondary" ion-fab mini>
           <ion-icon name="add"></ion-icon>
@@ -19,9 +19,11 @@
 
     <div class="formcontent">
       <form #form="ngForm" (ngSubmit)="onAddBusiness(form)">
+          <input ngModel class="input" name="email" type="email" placeholder="E-Mail" required />
+          <input ngModel class="input" name="password" type="password" placeholder="password" required />
         <input ngModel class="input" name="name" type="text" placeholder="Business Name" required />
         <input ngModel class="input" name="address" type="text" placeholder="Address" required />
-        <input ngModel class="input" name="email" type="email" placeholder="E-Mail" required />
+       
         <input ngModel class="input" name="telephone" type="tel" placeholder="Telephone" required />
 
         <input ngModel class="input" name="diesel" type="number" placeholder="Diesel Price" required />
